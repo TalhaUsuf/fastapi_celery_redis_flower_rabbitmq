@@ -1,3 +1,11 @@
+
+
+![](images/celery_workers_pools.svg)
+
+
+
+
+
 # fastapi-celery-flower-rabbitmq-redis
 
 This repository serves as an illustrative example of implementing FastAPI with Celery within Docker containers. The underlying architecture involves Celery utilizing RabbitMQ as the message broker and Redis as the backend.

@@ -1,4 +1,5 @@
 version: '3.3'
+
 services:
   fastapi-app:
     container_name: celery_test_fastapi_app
@@ -9,9 +10,55 @@ services:
     ports:
       - 8022:8000
     depends_on:
-    - rabbitmq
-    - redis
+      - rabbitmq
+      - redis
+      - mongodb
+    networks:
+      - celery_pubsub
+    env_file:
+      - .env
+    environment:
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DB=${MONGO_INITIAL_DB}
+      - MONGO_USER=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PWD}
+  
 
+  mongodb:
+    image: mongo:latest
+    container_name: celery_test_mongodb
+    ports:
+      - 27020:27017
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PWD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITIAL_DB}
+    networks:
+      - celery_pubsub
+    env_file:
+      - .env
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: celery_test_mongo-express
+    depends_on:
+      - mongodb
+    ports:
+      - "8076:8081"
+    # default UI creds: admin, pass, change following tto set them
+    # ME_CONFIG_BASICAUTH_USERNAME: myadmin  # Custom UI username
+    # ME_CONFIG_BASICAUTH_PASSWORD: mypassword  # Custom UI password
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PWD}
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    networks:
+      - celery_pubsub
+    env_file:
+      - .env
 
   rabbitmq:
     container_name: celery_test_rabbitmq
@@ -19,11 +66,22 @@ services:
     restart: always
     ports:
       - 15677:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RMQ_PWD}
+    networks:
+      - celery_pubsub
+    env_file:
+      - .env
 
   redis:
     container_name: celery_test_redis
     image: redis:alpine
     restart: always
+    networks:
+      - celery_pubsub
+    env_file:
+      - .env
 
   celery_worker:
     build:
@@ -33,18 +91,42 @@ services:
     depends_on:
       - rabbitmq
       - redis
+    networks:
+      - celery_pubsub
+    
+    # worker needs to use use mongodb as result backend
+    # following env. variables would be available inside each celery_worker container specifically
+    environment:
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DB=${MONGO_CELERY_RESULTS_DB}
+      - MONGO_USER=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PWD}
     deploy:
       replicas: 1
+    env_file:
+      - .env
+    # omit this because it will be scaled , <service_name>_1 scheme will be applied by docker
+    # container_name: celery_test_worker
 
   flower:
     container_name: celery_test_flower
-    image: mher/flower:1.2
+    image: mher/flower:master
     environment:
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-      - FLOWER_URL=http://celery_worker:5555
+      CELERY_BROKER_URL: amqp://${RMQ_USER}:${RMQ_PWD}@rabbitmq:5672/
+    networks:
+      - celery_pubsub
     restart: always
     ports:
       - 5558:5555
     depends_on:
       - celery_worker
       - rabbitmq
+    env_file:
+      - .env
+
+volumes:
+  mongodb_data:
+
+networks:
+  celery_pubsub:
