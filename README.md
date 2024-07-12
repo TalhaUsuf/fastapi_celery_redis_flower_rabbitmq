@@ -9,8 +9,11 @@ The fast api will hold two endpoints one to submit email task, other to get the 
 
 This diagram shows the dependency between the services in docker compose file.
 
-![](images/servicesDependency.svg)
 
+![](images/services_dependency.png)
+
+
+Here redis has been shown as the result backend, however in actual implementation mongodb has been used as result backend.
 
 
 # Ports 
