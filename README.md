@@ -16,6 +16,20 @@ This diagram shows the dependency between the services in docker compose file.
 Here redis has been shown as the result backend, however in actual implementation mongodb has been used as result backend.
 
 
+
+# Services
+
+| Service Container Name | Image | Purpose |
+|------------------------|-------|---------|
+| fastapi-app | celery_test_fastapi_app | Custom build. Runs the FastAPI application, handles HTTP requests, and interacts with MongoDB, RabbitMQ, and Redis. |
+| mongodb | mongo:latest | NoSQL database for storing application data, initialized with specified username, password, and database. |
+| mongo-express | mongo-express:latest | Web-based MongoDB admin interface, allows easy database management and visualization. |
+| rabbitmq | rabbitmq:3.11.2-management-alpine | Message broker for handling and routing messages between services, especially for Celery workers. |
+| redis | redis:alpine | In-memory data store used for caching, message brokering, and other temporary data storage needs. |
+| celery_worker | Generated name | Custom build. Executes background tasks from the FastAPI application using Celery, with RabbitMQ as the broker and MongoDB as the result backend. |
+| flower | mher/flower:master | Monitoring tool for Celery, provides a web interface to inspect tasks and workers. |
+
+
 # Ports 
 
 When all services are up, following ports can be accessed using `localhost:<port>` to access the respective pages of services:
