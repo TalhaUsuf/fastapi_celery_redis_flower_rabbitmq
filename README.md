@@ -1,6 +1,40 @@
 
 
+# Intro.
+
+The fast api will hold two endpoints one to submit email task, other to get the status of the task. rabbit mq will be used as a message broker and mongodb will be used a result backend, celery is the asyncronous task execution system, celery worker will take the task from queue and after completion send results to result backend, monogdb UI can be used to access the mongodb records and the flower UI can be used to keep track of rabbit mq queues and the workers statistics.
+
+
+# Services dependency
+
+This diagram shows the dependency between the services in docker compose file.
+
+![](images/servicesDependency.svg)
+
+
+
+# Ports 
+
+When all services are up, following ports can be accessed using `localhost:<port>` to access the respective pages of services:
+
+| Service Name | Host Port |
+| --- | --- |
+| fastapi-app | 8022 |
+| mongodb | 27020 |
+| mongo-express | 8076 |
+| rabbitmq | 15677 |
+| flower | 5558 |
+
+
+> NOTE: All services use different ports to communicate with each other inside the docker network. Above mentioned ports are exposed to host so that sevices are accesssible from outside the container.
+
+
+
+
+Following diagram shows how the celery worker process and child processes against each worker will be working together.
+
 ![](images/celery_workers_pools.svg)
+
 
 
 
@@ -21,36 +55,35 @@ To successfully run and understand this example, ensure you have the following c
 
 ## Running
 
-Follow these steps to run the example on your local machine:
+Following will build the containers and spin up service containers:
 
-1. Clone the repository:
+```bash
 
-```sh
-git clone https://github.com/luovkle/fastapi-celery-flower-rabbitmq-redis.git
-cd fastapi-celery-flower-rabbitmq-redis
+make start
+
 ```
 
-2. Build and start the Docker containers using Docker Compose:
+## Scale Celery workers
 
-```sh
-docker compose up -d
+While the services are all up, following command can be used to scale the celery workers:
+
+```bash
+make scale
+
 ```
 
-3. Wait for the containers to be up and running. The FastAPI application, Celery workers, RabbitMQ, and Redis services should all be active.
+This will attach more workers with the existing rabbit-mq queue. Nothing else will be disturbed.
 
-## Accessing Services
 
-Once the containers are up, you can access the following services:
 
-- **FastAPI** REST API: Access the FastAPI application by navigating to **http://localhost:8000** in your web browser or using tools like curl or Postman.
-- **Flower** Monitoring Dashboard: Monitor the Celery tasks and workers by visiting **http://localhost:5555** in your web browser.
-- **RabbitMQ** Management UI: Observe the message broker's activity at **http://localhost:15672**. The default login credentials are **guest** for both username and password.
-- **Redis**: Redis, used as the backend, is internally accessible to the containers within the network.
 
-Feel free to explore the code in this repository to gain a better understanding of how FastAPI, Celery, RabbitMQ, and Redis are integrated to create an asynchronous email processing system.
-
-For any issues or inquiries, please open an issue on this repository.
 
 ## Note
 
-This example is intended for educational purposes and might not reflect a production-ready setup. Make sure to adapt it according to your needs and security considerations before deploying it in a production environment.
+| Celery config. | Technologies |
+| --- | --- |
+| Result Backend | MongoDB |
+| Message Broker | RabbitMQ |
+
+
+Redis can also be used as a result backend, just see the celery worker python file, and uncomment that portion.
